@@ -1,41 +1,42 @@
 import express from 'express';
 import cors from 'cors';
-import { EventService } from './service';
-import { CreateEventDto } from './types';
+import { createEvent, getAllEvents, getEventById } from './service';
+import { Event } from './types';
 
 const app = express();
+const port = process.env.PORT || 3000;
+
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
+// Create an event
+app.post('/api/events', (req, res) => {
+  try {
+    const eventData = req.body as Omit<Event, 'id' | 'currentParticipants'>;
+    const event = createEvent(eventData);
+    res.status(201).json(event);
+  } catch (error) {
+    res.status(400).json({ error: 'Invalid event data' });
+  }
+});
 
 // Get all events
 app.get('/api/events', (req, res) => {
   const location = req.query.location as string | undefined;
-  const events = EventService.getAllEvents(location);
+  const events = getAllEvents(location);
   res.json(events);
 });
 
-// Get event by ID
+// Get event by id
 app.get('/api/events/:id', (req, res) => {
-  const event = EventService.getEventById(req.params.id);
-  if (!event) {
-    return res.status(404).json({ message: 'Event not found' });
-  }
-  res.json(event);
-});
-
-// Create event
-app.post('/api/events', (req, res) => {
-  try {
-    const eventData: CreateEventDto = req.body;
-    const newEvent = EventService.createEvent(eventData);
-    res.status(201).json(newEvent);
-  } catch (error) {
-    res.status(400).json({ message: 'Invalid event data' });
+  const event = getEventById(req.params.id);
+  if (event) {
+    res.json(event);
+  } else {
+    res.status(404).json({ error: 'Event not found' });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
